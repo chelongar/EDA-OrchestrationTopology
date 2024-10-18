@@ -1,0 +1,144 @@
+.content {
+    background-color: white;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.report h2 {
+    text-align: center;
+    font-style: italic;
+    color: #444;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+thead {
+    background-color: #333;
+    color: white;
+}
+
+thead th {
+    padding: 10px;
+    text-align: left;
+}
+
+tbody tr {
+    background-color: #f9f9f9;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #eee;
+}
+
+tbody td {
+    padding: 10px;
+}
+
+.basket-icon {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: #333;
+    transition: color 0.3s ease;
+}
+
+.basket-icon:hover {
+    color: #555;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+}
+.actions {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.action-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #333;
+    color: white;
+    transition: background-color 0.3s ease;
+    margin: 0 10px;
+}
+
+.action-button:hover {
+    background-color: #555;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center child elements horizontally */
+    width: 100%; /* Ensure the form takes full width of the container */
+}
+
+input[type="submit"] {
+    display: block;
+    width: auto;
+    padding: 10px 20px; /* Adjust padding to give it some spacing */
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold; /* Make the text bold */
+}
+
+input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin: 0 10px;
+}
+
+.payment-icon {
+    width: 50px;
+    height: auto;
+}
+
+.home-icon {
+    font-size: 24px;
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+.icon-button:hover .payment-icon,
+.home-icon:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+
+.icon-button:focus .payment-icon,
+.home-icon:focus {
+    outline: none;
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+
+.welcome-image-container {
+    text-align: center;
+}
+
+.welcome-image {
+    max-width: 100%; /* Optional: to ensure the image is responsive */
+    height: auto; /* Optional: to maintain aspect ratio */
+}

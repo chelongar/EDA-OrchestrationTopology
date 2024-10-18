@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Customer Signup - Wonderland Bookstore
+{% endblock %}
+
+{% block login_logout %}
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    {% else %}
+        <a href="{{ url_for('auth.customer_sign_in') }}">Sign In</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling_sheet_welcome_page.css') }}">
+    <div class="container">
+        <h2>To see the list of our books please click the button below</h2>
+        <form action="" method="POST">
+            <br>
+            <input type="submit" name="get_books_list" value="List of Books">
+        </form>
+    </div>
+    <br> <br> <br>
+
+    <div class="welcome-image-container">
+        <img src="{{ url_for('static', filename='welcome_page_image.png') }}" alt="Welcome to Wonderland Bookstore" class="welcome-image">
+    </div>
+
+    <br><br> <br><br> <br><br> <br><br>
+{% endblock %}

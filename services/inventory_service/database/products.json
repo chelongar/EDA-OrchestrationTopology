@@ -1,0 +1,44 @@
+{
+  "books": [
+    {
+      "Title": "Fundamentals of Software Architecture",
+      "Author": "Marc Richards & Neal Ford",
+      "ISBN": "9781492043454",
+      "Price": "59",
+      "Amount": "50",
+      "Publisher": "O'REILLY"
+    },
+    {
+      "Title": "The Software Architect Elevator",
+      "Author": "Gregor Hohpe",
+      "ISBN": "9781492077541",
+      "Price": "49",
+      "Amount": "70",
+      "Publisher": "O'REILLY"
+    },
+    {
+      "Title": "Data Mesh: Delivering Data-Driven Value at Scale",
+      "Author": "Zhamak Dehghani",
+      "ISBN": "9781492092391",
+      "Price": "59",
+      "Amount": "90",
+      "Publisher": "O'REILLY"
+    },
+    {
+      "Title": "Domain-Driven Design Distilled",
+      "Author": "Vaughn Vernon",
+      "ISBN": "9780134434421",
+      "Price": "39",
+      "Amount": "55",
+      "Publisher": "Addison-Wesley"
+    },
+    {
+      "Title": "Building Evolutionary Architecture",
+      "Author": "Neal Ford, Rebecca Parsons & Patric Kua",
+      "ISBN": "9781492097549",
+      "Price": "45",
+      "Amount": "60",
+      "Publisher": "O'REILLY"
+    }
+    ]
+}

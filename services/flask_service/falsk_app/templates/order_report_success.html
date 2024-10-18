@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title> Purchase Done </title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styling_order_report_success.css') }}">
+        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='bookstore_icon.png') }}">
+    </head>
+    <body>
+        <center>
+            <header>
+                <h1>Wonderland Bookstore</h1>
+            </header>
+        </center>
+            <div class="content">
+                {% block content %}
+                <br> <br>
+                <i><h2>Your Purchase Report</h2></i>
+                {% for i in range(keys|length) %}
+                <div style="padding: 10px; background-color: #EEE; margin: 20px">
+                    <p style="font-size: 20px"><b>{{ keys[i] }}</b> {{"  ::  "}} {{ values[i]}}</p>
+                </div>
+                {% endfor %}
+            </div>
+        <center>
+            <div>
+                <form method="POST">
+                    <br> <br>
+                    <input type="submit" name="return_home" value="Home" size="40">
+                </form>
+                <form method="POST">
+                    <input type="submit" name="return_to_order" value="Order Again" size="40">
+                </form>
+            {% endblock %}
+            </div>
+            <br><br> <br><br> <br><br> <br><br>
+        </center>
+    </body>
+    <footer>
+        <p>
+            @Copyright {{ year}}. Wonderland Bookstore Application
+        </p>
+    </footer>
+</html>
