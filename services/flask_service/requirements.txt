@@ -1,0 +1,8 @@
+Flask==2.0.1
+flask_login==0.6.3
+Flask-Cors==3.0.0
+Jinja2==3.0.1
+pika==1.2.0
+pip-review==1.1.0
+Werkzeug==2.2.0
+configparser==7.0.0

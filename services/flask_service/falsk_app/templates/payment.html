@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Payment - Wonderland Bookstore
+{% endblock %}
+
+{% block login_logout %}
+    {% if current_user.is_authenticated %}
+<a href="{{ url_for('auth.logout') }}" xmlns="http://www.w3.org/1999/html">Logout</a>
+    {% else %}
+        <a href="{{ url_for('auth.customer_sign_in') }}">Sign In</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styling_payment.css') }}">
+    <div class="container">
+        <section class="report">
+            <h2>Your Orders</h2>
+            <table>
+                <thead>
+                    <tr>
+                        {% for key in data[0].keys() %}
+                            <th>{{ key | capitalize }}</th>
+                        {% endfor %}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in data %}
+                    <tr>
+                        {% for value in entry.values() %}
+                        <td>{{ value }}</td>
+                        {% endfor %}
+                        <td>
+                            <form method="POST">
+                                <input type="hidden" name="json_object" value="{{ entry }}">
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="{{ data[0].keys() | length }}"></td>
+                        <td><strong>Total Price: {{ total_price }}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </section>
+        <div class="container">
+            <section class="actions">
+                <form method="POST">
+                    <button type="submit" name="paypal" value="paypal" class="icon-button">
+                        <img src="static/bookstore_icon.png" alt="PayPal" class="payment-icon">
+                    </button>
+                    <button type="submit" name="mastercard" value="paypal" class="icon-button">
+                        <img src="static/bookstore_icon.png" alt="Mastercard" class="payment-icon">
+                    </button>
+                    <button type="submit" name="visa" value="paypal" class="icon-button">
+                        <img src="static/bookstore_icon.png" alt="Visa" class="payment-icon">
+                    </button>
+                </form>
+
+                <br><br>
+
+                <!-- Home button -->
+                <form method="POST">
+                    <button type="submit" name="return_home" value="Home" class="home-icon">&#127968;</button>
+                </form>
+            </section>
+        </div>
+    <br> <br> <br>
+    <div class="welcome-image-container">
+        <img src="{{ url_for('static', filename='welcome_page_image.png') }}" alt="Welcome to Wonderland Bookstore" class="welcome-image">
+    </div>
+    <br><br> <br><br> <br><br> <br><br>
+{% endblock %}

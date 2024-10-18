@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title> Product Not Found </title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styling_order_report_failure.css') }}">
+        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='bookstore_icon.png') }}">
+    </head>
+    <body>
+        <center>
+            <header>
+                <h1>Wonderland Bookstore</h1>
+            </header>
+            <td>
+                <img class="one" src={{url_for('static', filename='sorry.png')}} alt="image">
+            </td>
+            <br>
+            <div class="content">
+                {% block content %}
+                <br> <br>
+                <h1 style="color : red;">{{ message }} </h1>
+            </div>
+            <div>
+                <form method="POST">
+                    <br>
+                    <h2> Return to HOME </h2>
+                    <input type="submit" name="return_home" value="Home" size="40">
+                </form>
+                <form method="POST">
+                    <h2> Return To Order Page </h2>
+                    <input type="submit" name="return_to_order" value="Order Again" size="40">
+                </form>
+                {% endblock %}
+            </div>
+        </center>
+    </body>
+    <footer>
+        <p> @Copyright {{ year}}. Wonderland Bookstore Application </p>
+    </footer>
+</html>
