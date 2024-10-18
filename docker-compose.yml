@@ -1,0 +1,141 @@
+version: "3.5"
+
+services:
+
+  rabbitMQ_broker:
+    image: rabbitmq:3.8-rc-management
+    container_name: rabbitMQ_broker
+    ports:
+      - '5678:5672'
+      - '15678:15672'
+    volumes:
+      - rabbitMQ_volume:/usr/share/rabbitmq/data
+
+  flask_service:
+    container_name: flask_service
+    build:
+      context: .
+      dockerfile: ./services/flask_service/Dockerfile
+    ports:
+      - '5000:7788'
+    depends_on:
+      - rabbitMQ_broker
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=${FLASK_SERVICE_NAME}
+    volumes:
+      - ./services/flask_service:/flask_service
+      - share_files:/home/temp_user/uploads
+
+  inventory_service:
+    container_name: inventory_service
+    build:
+      context: .
+      dockerfile: ./services/inventory_service/Dockerfile
+    depends_on:
+      - rabbitMQ_broker
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=${INVENTORY_SERVICE_NAME}
+    volumes:
+      - ./services/inventory_service:/inventory_service
+
+  payment_service:
+    container_name: payment_service
+    build:
+      context: .
+      dockerfile: ./services/payment_service/Dockerfile
+    depends_on:
+      - rabbitMQ_broker
+      - inventory_service
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=${PAYMENT_SERVICE_NAME}
+    volumes:
+      - ./services/payment_service:/payment_service
+
+  logging_service:
+    container_name: logging_service
+    build:
+      context: .
+      dockerfile: ./services/logging_service/Dockerfile
+    depends_on:
+      - rabbitMQ_broker
+      - payment_service
+      - flask_service
+      - inventory_service
+    env_file:
+      - .env
+    volumes:
+      - ./services/logging_service:/logging_service
+
+  customer_service:
+    container_name: customer_service
+    build:
+      context: .
+      dockerfile: ./services/customer_service/Dockerfile
+    depends_on:
+      - rabbitMQ_broker
+      - flask_service
+      - postgreSQL_service
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=${CUSTOMER_SERVICE_NAME}
+    volumes:
+      - ./services/customer_service:/customer_service
+      - share_files:/home/temp_user/uploads
+
+  notification_service:
+    container_name: notification_service
+    build:
+      context: .
+      dockerfile: ./services/notification_service/Dockerfile
+    depends_on:
+      - rabbitMQ_broker
+      - flask_service
+      - payment_service
+      - inventory_service
+    env_file:
+      - .env
+    volumes:
+      - ./services/notification_service:/notification_service
+  dozzle_service:
+    image: amir20/dozzle:latest
+    container_name: dozzle_service
+    restart: unless-stopped
+    networks:
+      - default
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - DOZZLE_TAILSIZE=${DOZZLE_TAILSIZE}
+      - DOZZLE_FILTER=${DOZZLE_FILTER}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  postgreSQL_service:
+    image: postgres:14-alpine
+    container_name: postgreSQL_service
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgreSQL/data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      timeout: 2s
+      interval: 5s
+      retries: 10
+
+volumes:
+    rabbitMQ_volume:
+      driver: local
+    share_files:
+      driver: local
