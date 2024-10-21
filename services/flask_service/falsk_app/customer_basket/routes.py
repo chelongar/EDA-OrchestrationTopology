@@ -131,21 +131,28 @@ def prepare_basket_data(basket_data):
 @login_required
 def remove_item_from_basket(item_information):
     if request.method == "GET":
-        event_notification = event.notification_event(required_action='remove-item-from-basket',
-                                                      payload={
-                                                          'product_information': ast.literal_eval(item_information)})
+        return handle_item_removal(item_information)
+    return redirect(url_for("main.get_list_of_books_in_details"))
 
-        response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
-        if response['message'] == 'succeed':
-            basket_data = get_customer_from_customer_service().get('customer_basket')[0].get('basket_items')
-            if not len(basket_data):
-                return redirect(url_for("main.get_list_of_books_in_details"))
 
-            return redirect(url_for("basket.customer_basket"))
-        elif response['message'] == 'failed':
-            return response['payload']
-    else:
+def handle_item_removal(item_information):
+    event_notification = event.notification_event(required_action='remove-item-from-basket',
+                                                  payload={'product_information': ast.literal_eval(item_information)})
+
+    response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+    if response['message'] == 'succeed':
+        return handle_successful_removal()
+    elif response['message'] == 'failed':
+        return response['payload']
+
+    return redirect(url_for("main.get_list_of_books_in_details"))
+
+
+def handle_successful_removal():
+    basket_data = get_customer_from_customer_service().get('customer_basket')[0].get('basket_items')
+    if not basket_data:
         return redirect(url_for("main.get_list_of_books_in_details"))
+    return redirect(url_for("basket.customer_basket"))
 
 
 @basket_blueprint.route('/decrement_item_from_basket/<item_information>', methods=['POST', 'GET'])
