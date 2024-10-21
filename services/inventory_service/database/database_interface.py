@@ -116,74 +116,70 @@ class database_interface:
         return items
 
     def delete_data_from_db(self, _id: str):
-        db_connection = self.get_db_connection()
-
-        db_connection.execute("DELETE FROM books WHERE ISBN = ?", (_id,))
-
-        db_connection.commit()
-        db_connection.close()
+        try:
+            with self.get_db_connection() as db_connection:
+                db_connection.execute("DELETE FROM books WHERE ISBN = ?", (_id,))
+                db_connection.commit()
+                print(f"Deleted book with ISBN: {_id}")
+        except Exception as err:
+            print(f"Error deleting book with ISBN {_id}: {err}")
+            raise
 
     def reduce_book_amount_by_title(self, _title: str) -> bool:
         try:
+            # Get database connection and cursor
             db_connection = self.get_db_connection()
-            db_cursor = db_connection.cursor()
+            with db_connection:  # Automatically commits or rolls back
+                db_cursor = db_connection.cursor()
 
-            db_cursor.execute("SELECT bookAmount FROM books WHERE bookName = ?", (_title,))
-            ret_value = db_cursor.fetchone()
+                # Fetch current book amount
+                db_cursor.execute("SELECT bookAmount FROM books WHERE bookName = ?", (_title,))
+                ret_value = db_cursor.fetchone()
 
-            if not ret_value or ret_value[0] == '0':
-                return False
+                # Check if the book exists and has a positive amount
+                if not ret_value or ret_value[0] == '0':
+                    return False
 
-            _ret_value = str(int(ret_value[0]) - 1)
+                _ret_value = str(int(ret_value[0]) - 1)
 
-            sql_command = '''UPDATE books SET bookAmount = ? WHERE bookName = ?'''
-            db_cursor.execute(sql_command, (_ret_value, _title,))
-            db_connection.commit()
+                # Update the book amount in the database
+                db_cursor.execute("UPDATE books SET bookAmount = ? WHERE bookName = ?", (_ret_value, _title))
 
-            if __debug__:
-                print('Current Amount of Item in DB:', _ret_value)
+                if __debug__:
+                    print('Current Amount of Item in DB:', _ret_value)
 
-            return True
+                return True
 
         except Exception as e:
             print(f"Error in reducing book amount occurred: {e}")
             return False
 
-        finally:
-            try:
-                if db_cursor:
-                    db_cursor.close()
-                if db_connection:
-                    db_connection.close()
-            except Exception as cleanup_error:
-                print(f"Error closing resources: {cleanup_error}")
-
     def reduce_book_amount_by_id(self, _id: str) -> bool:
         db_connection = self.get_db_connection()
         db_cursor = db_connection.cursor()
 
-        db_cursor.execute("SELECT bookAmount FROM books WHERE ISBN = ?", (_id,))
+        try:
+            # Fetch the current book amount
+            db_cursor.execute("SELECT bookAmount FROM books WHERE ISBN = ?", (_id,))
+            ret_value = db_cursor.fetchone()
 
-        ret_value = db_cursor.fetchall()
+            if ret_value and ret_value[0] == '0':
+                return False
 
-        if ret_value[0][0] == '0':
-            db_cursor.close()
-            db_connection.close()
-
-            return False
-        else:
-            _ret_value = str(int(ret_value[0][0]) - 1)
-            sql_command = ''' UPDATE books SET bookAmount = ?  WHERE ISBN = ?'''
-            db_cursor.execute(sql_command, (_ret_value, _id,))
+            new_amount = str(int(ret_value[0]) - 1)
+            db_cursor.execute("UPDATE books SET bookAmount = ? WHERE ISBN = ?", (new_amount, _id))
             db_connection.commit()
 
             if __debug__:
-                print('Current Amount of Item in DB: ', _ret_value)
+                print('Current Amount of Item in DB: ', new_amount)
 
-        db_cursor.close()
-        db_connection.close()
-
-        return True
+            return True
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
+        finally:
+            db_cursor.close()
+            db_connection.close()
 
     def check_book_by_title(self, _title: str) -> dict:
         db_connection = self.get_db_connection()
