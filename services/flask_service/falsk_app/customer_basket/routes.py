@@ -18,135 +18,174 @@ basket_blueprint = Blueprint('basket', __name__)
 @login_required
 def customer_basket():
     """
-
-    :return:
+    Handle the customer basket actions: display basket and manage item actions.
     """
     if request.method == 'GET':
-        '''
-        First Step:
-        Order Placement - Check if the requested purchase is possible to fulfill or not
-        '''
-        items_price_list = list()
-        basket_data = list()
-        try:
-            basket_data = get_customer_from_customer_service().get('customer_basket', [])[0]['basket_items']
-        except (KeyError, IndexError, TypeError) as err:
-            print(err)
-            logging_message_sender(log_severity='error', payload={err},
-                                   exchange_type=current_app.config['LOGGING_EXCHANGE_TYPE'],
-                                   exchange_name=current_app.config['LOGGING_EXCHANGE_NAME'],
-                                   message='Error occurred in retrieving basket data')
-            if not get_customer_from_customer_service() or not isinstance(get_customer_from_customer_service().get('customer_basket'), list):
-                return redirect(url_for("main.get_list_of_books_in_details"))
-
-        if not len(basket_data):
-            return redirect(url_for("main.get_list_of_books_in_details"))
-
-        for ITERATOR in range(len(basket_data)):
-            event_notification = event.notification_event(required_action='check_item_by_ISBN',
-                                                          payload={'ISBN': basket_data[ITERATOR].get('ISBN')})
-            response = send_message_to_service(event_notification('json'), current_app.config['INVENTORY_QUEUE'])
-            response_payload = json.loads(response['payload'])
-            if response_payload['status'] == 'item-does-exist':
-                if os.environ['DEBUG_FLAG'] == 'True':
-                    logging_message_sender(log_severity='info', payload=response_payload,
-                                           exchange_type=current_app.config['LOGGING_EXCHANGE_TYPE'],
-                                           exchange_name=current_app.config['LOGGING_EXCHANGE_NAME'],
-                                           message=event_notification('dict')['required_action'])
-                items_price_list.append(basket_data[ITERATOR].get('Price'))
-            elif response_payload['status'] == 'item-not-available':
-                if os.environ['DEBUG_FLAG'] == 'True':
-                    logging_message_sender(log_severity='info', payload=response_payload,
-                                           exchange_type=current_app.config['LOGGING_EXCHANGE_TYPE'],
-                                           exchange_name=current_app.config['LOGGING_EXCHANGE_NAME'],
-                                           message=event_notification('dict')['required_action'])
-                return render_template('order_report_failure.html', message='Requested Item Is Not Available')
-            elif response_payload['status'] == 'item-does-not-exist':
-                if os.environ['DEBUG_FLAG'] == 'True':
-                    logging_message_sender(log_severity='info', payload=response_payload,
-                                           exchange_type=current_app.config['LOGGING_EXCHANGE_TYPE'],
-                                           exchange_name=current_app.config['LOGGING_EXCHANGE_NAME'],
-                                           message=event_notification('dict')['required_action'])
-                return render_template('order_report_failure.html', message='Requested Item Does Not Exist')
-            elif response_payload['status'] == {}:
-                if os.environ['DEBUG_FLAG'] == 'True':
-                    logging_message_sender(log_severity='info', payload=response_payload,
-                                           exchange_type=current_app.config['LOGGING_EXCHANGE_TYPE'],
-                                           exchange_name=current_app.config['LOGGING_EXCHANGE_NAME'],
-                                           message=event_notification('dict')['required_action'])
-                return render_template('order_report_failure.html', message='Invalid Request')
-            else:
-                return "FAILURE"
-
-        for item in basket_data:
-            del item['Count']
-
-        count_dict = defaultdict(int)
-        for _item in basket_data:
-            # Convert the dictionary to a tuple of sorted items, so it's hashable
-            count_dict[tuple(sorted(_item.items()))] += 1
-
-        _basket_data = []
-        for _item, count in count_dict.items():
-            unique_dict = dict(_item)
-            unique_dict['Orders Count'] = count
-            _basket_data.append(unique_dict)
-
-        return render_template('customer_basket.html', data=_basket_data,
-                               total_price=str(sum(int(_price) for _price in items_price_list)))
+        return handle_get_basket()
 
     elif request.method == 'POST':
-        if request.form.get('action_type') == 'remove':
-            return redirect(url_for("basket.remove_item_from_basket",
-                                    item_information=ast.literal_eval(request.form.get('json_object'))))
-        elif request.form.get('action_type') == 'decrease':
-            return redirect(url_for("basket.decrement_item_from_basket",
-                                    item_information=ast.literal_eval(request.form.get('json_object'))))
-        elif request.form.get('submit_order'):
-            return redirect(url_for("payment.payment"))
-        elif request.form.get('get_list_of_items'):
-            return redirect(url_for("main.get_list_of_books_in_details"))
-        else:
-            return request.form.get('action_type')
+        return handle_post_basket()
+
+
+def handle_get_basket():
+    """
+    Handle GET request for the customer basket.
+    """
+    items_price_list = []
+    basket_data = fetch_basket_data()
+
+    if not basket_data:
+        return redirect(url_for("main.get_list_of_books_in_details"))
+
+    for item in basket_data:
+        response_payload = check_item_availability(item)
+        if response_payload:
+            status = response_payload['status']
+            if status == 'item-does-exist':
+                items_price_list.append(item.get('Price'))
+            else:
+                return handle_item_not_available(status)
+
+    cleaned_basket_data = prepare_basket_data(basket_data)
+
+    return render_template('customer_basket.html', data=cleaned_basket_data,
+                           total_price=str(sum(int(price) for price in items_price_list)))
+
+
+def handle_post_basket():
+    """
+    Handle POST request for the customer basket.
+    """
+    action_type = request.form.get('action_type')
+
+    if action_type == 'remove':
+        return redirect(url_for("basket.remove_item_from_basket",
+                                item_information=ast.literal_eval(request.form.get('json_object'))))
+    elif action_type == 'decrease':
+        return redirect(url_for("basket.decrement_item_from_basket",
+                                item_information=ast.literal_eval(request.form.get('json_object'))))
+    elif request.form.get('submit_order'):
+        return redirect(url_for("payment.payment"))
+    elif request.form.get('get_list_of_items'):
+        return redirect(url_for("main.get_list_of_books_in_details"))
+    else:
+        return action_type
+
+
+def fetch_basket_data():
+    """
+    Fetch the basket data from the customer service.
+    """
+    try:
+        response = get_customer_from_customer_service().get('customer_basket', [])
+        return response[0]['basket_items'] if response else []
+    except (KeyError, IndexError, TypeError) as err:
+        logging_message_sender(log_severity='error', payload={err},
+                               exchange_type=current_app.config['LOGGING_EXCHANGE_TYPE'],
+                               exchange_name=current_app.config['LOGGING_EXCHANGE_NAME'],
+                               message='Error occurred in retrieving basket data')
+        return []
+
+
+def check_item_availability(item):
+    """
+    Check if an item exists in the inventory.
+    """
+    event_notification = event.notification_event(required_action='check_item_by_ISBN',
+                                                  payload={'ISBN': item.get('ISBN')})
+    response = send_message_to_service(event_notification('json'), current_app.config['INVENTORY_QUEUE'])
+    return json.loads(response['payload'])
+
+
+def handle_item_not_available(status):
+    """
+    Handle cases where the item is not available or does not exist.
+    """
+    error_messages = {
+        'item-not-available': 'Requested Item Is Not Available',
+        'item-does-not-exist': 'Requested Item Does Not Exist',
+        '': 'Invalid Request',
+    }
+
+    if status in error_messages:
+        return render_template('order_report_failure.html', message=error_messages[status])
+
+    return "FAILURE"
+
+
+def prepare_basket_data(basket_data):
+    """
+    Prepare basket data by counting unique items and their occurrences.
+    """
+    for item in basket_data:
+        del item['Count']  # Remove the Count key as specified
+
+    count_dict = defaultdict(int)
+    for item in basket_data:
+        count_dict[tuple(sorted(item.items()))] += 1
+
+    return [{**dict(item), 'Orders Count': count} for item, count in count_dict.items()]
 
 
 @basket_blueprint.route('/remove_item_from_basket/<item_information>', methods=['POST', 'GET'])
 @login_required
 def remove_item_from_basket(item_information):
     if request.method == "GET":
-        event_notification = event.notification_event(required_action='remove-item-from-basket',
-                                                      payload={
-                                                          'product_information': ast.literal_eval(item_information)})
+        return handle_item_removal(item_information)
+    return redirect(url_for("main.get_list_of_books_in_details"))
 
-        response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
-        if response['message'] == 'succeed':
-            basket_data = get_customer_from_customer_service().get('customer_basket')[0].get('basket_items')
-            if not len(basket_data):
-                return redirect(url_for("main.get_list_of_books_in_details"))
 
-            return redirect(url_for("basket.customer_basket"))
-        elif response['message'] == 'failed':
-            return response['payload']
-    else:
+def handle_item_removal(item_information):
+    event_notification = event.notification_event(required_action='remove-item-from-basket',
+                                                  payload={'product_information': ast.literal_eval(item_information)})
+
+    response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+    if response['message'] == 'succeed':
+        return handle_successful_removal()
+    elif response['message'] == 'failed':
+        return response['payload']
+
+    return redirect(url_for("main.get_list_of_books_in_details"))
+
+
+def handle_successful_removal():
+    basket_data = get_customer_from_customer_service().get('customer_basket')[0].get('basket_items')
+    if not basket_data:
         return redirect(url_for("main.get_list_of_books_in_details"))
+    return redirect(url_for("basket.customer_basket"))
 
 
 @basket_blueprint.route('/decrement_item_from_basket/<item_information>', methods=['POST', 'GET'])
 @login_required
 def decrement_item_from_basket(item_information):
-    if request.method == "GET":
-        event_notification = event.notification_event(required_action='decrement-item-from-basket',
-                                                      payload={
-                                                          'product_information': ast.literal_eval(item_information)})
-
-        response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
-        if response['message'] == 'succeed':
-            basket_data = get_customer_from_customer_service().get('customer_basket')[0].get('basket_items')
-            if not len(basket_data):
-                return redirect(url_for("main.get_list_of_books_in_details"))
-
-            return redirect(url_for("basket.customer_basket"))
-        elif response['message'] == 'failed':
-            return response['payload']
-    else:
+    if request.method != "GET":
+        # Redirect if the request method is not GET
         return redirect(url_for("main.get_list_of_books_in_details"))
+
+    # Parse the item information and create the event notification
+    try:
+        product_info = ast.literal_eval(item_information)
+    except (ValueError, SyntaxError) as e:
+        return "Invalid item information format.", 400
+
+    event_notification = event.notification_event(required_action='decrement-item-from-basket',
+                                                  payload={'product_information': product_info})
+    response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+    if response.get('message') == 'succeed':
+        # Retrieve the customer's basket data
+        basket_data = get_customer_from_customer_service().get('customer_basket', [{}])[0].get('basket_items', [])
+
+        # Redirect based on whether the basket has any items left
+        if not basket_data:
+            return redirect(url_for("main.get_list_of_books_in_details"))
+
+        return redirect(url_for("basket.customer_basket"))
+
+    # Handle failure response
+    if response.get('message') == 'failed':
+        return response.get('payload', "An error occurred while processing your request."), 500
+
+    # Catch-all for unexpected response structures
+    current_app.logger.warning(f"Unexpected response from service: {response}")
+    return "Unexpected response from the service.", 500
