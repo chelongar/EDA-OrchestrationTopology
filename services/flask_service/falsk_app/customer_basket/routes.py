@@ -158,19 +158,34 @@ def handle_successful_removal():
 @basket_blueprint.route('/decrement_item_from_basket/<item_information>', methods=['POST', 'GET'])
 @login_required
 def decrement_item_from_basket(item_information):
-    if request.method == "GET":
-        event_notification = event.notification_event(required_action='decrement-item-from-basket',
-                                                      payload={
-                                                          'product_information': ast.literal_eval(item_information)})
-
-        response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
-        if response['message'] == 'succeed':
-            basket_data = get_customer_from_customer_service().get('customer_basket')[0].get('basket_items')
-            if not len(basket_data):
-                return redirect(url_for("main.get_list_of_books_in_details"))
-
-            return redirect(url_for("basket.customer_basket"))
-        elif response['message'] == 'failed':
-            return response['payload']
-    else:
+    if request.method != "GET":
+        # Redirect if the request method is not GET
         return redirect(url_for("main.get_list_of_books_in_details"))
+
+    # Parse the item information and create the event notification
+    try:
+        product_info = ast.literal_eval(item_information)
+    except (ValueError, SyntaxError) as e:
+        return "Invalid item information format.", 400
+
+    event_notification = event.notification_event(required_action='decrement-item-from-basket',
+                                                  payload={'product_information': product_info})
+    response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+    if response.get('message') == 'succeed':
+        # Retrieve the customer's basket data
+        basket_data = get_customer_from_customer_service().get('customer_basket', [{}])[0].get('basket_items', [])
+
+        # Redirect based on whether the basket has any items left
+        if not basket_data:
+            return redirect(url_for("main.get_list_of_books_in_details"))
+
+        return redirect(url_for("basket.customer_basket"))
+
+    # Handle failure response
+    if response.get('message') == 'failed':
+        return response.get('payload', "An error occurred while processing your request."), 500
+
+    # Catch-all for unexpected response structures
+    current_app.logger.warning(f"Unexpected response from service: {response}")
+    return "Unexpected response from the service.", 500
