@@ -1,16 +1,15 @@
 #!/usr/bin/python
 
-import argparse
 import ast
 import configparser
 import json
 import os
-import pika
 
+import pika
 from RPC import rpc_server
-from database import database_interface
 from exchange import sender_exchange
 
+from database import database_interface
 from utilities import event
 
 
