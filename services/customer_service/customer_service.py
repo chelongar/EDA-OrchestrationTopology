@@ -19,10 +19,7 @@ class customer_service(rpc_server.rpc_server):
                  logging_exchange_name: str, logging_exchange_type: str):
         super().__init__(rabbitmq_params, rpc_queue_name)
 
-        if os.environ['DEBUG_FLAG'] == 'True':
-            self.DEBUG_FLAG = True
-        else:
-            self.DEBUG_FLAG = False
+        self.DEBUG_FLAG = os.environ.get('DEBUG_FLAG', 'False') == 'True'
 
         self.notification_exchange_name = notification_exchange_name
         self.logging_exchange_name = logging_exchange_name
@@ -127,6 +124,93 @@ class customer_service(rpc_server.rpc_server):
                 print(str(err))
                 exit(1)
 
+    def __handle_customer_sign_in(self, message_body_dict, log_sender):
+        _customer_authentication = customer_authentication.customer_authentication(self._postgreSQL_db.get_session())
+        response = _customer_authentication.customer_login(
+            customer_username=message_body_dict['payload'].get('username'),
+            customer_password=message_body_dict['payload'].get('password')
+        )
+
+        if response['customer_sign_in'] == 'Login Was Successful':
+            _customer_dao = customer_dao.customer_dao(self._postgreSQL_db.get_session())
+            response['payload'] = _customer_dao.get_customer_by_username_json(message_body_dict['payload'].get('username'))
+            self.current_customer = _customer_authentication.get_current_customer()
+            log_sender('debug', 'Login Was Successful')
+        else:
+            log_sender('error', 'Login Failed')
+
+        return response
+
+    def __handle_basket_action(self, action_type, message_body_dict, log_sender):
+        _customer_basket_doa = customer_basket_doa.customer_basket_doa(self._postgreSQL_db.get_session())
+        product_info = message_body_dict['payload']['product_information']
+
+        action_map = {'remove': lambda: _customer_basket_doa.remove_item_from_basket(customer_basket_id=self.current_customer_basket.customer_basket_id,
+                                                                                     isbn=product_info['ISBN']),
+                      'decrement': lambda: _customer_basket_doa.decrement_item_from_basket(customer_basket_id=self.current_customer_basket.customer_basket_id,
+                                                                                           isbn=product_info['ISBN'])}
+
+        response = action_map[action_type]()
+        success_message = f"{action_type.capitalize()}ing Item from Basket Done Successfully"
+        fail_message = f"{action_type.capitalize()}ing Item from Basket Failed"
+
+        log_sender('debug' if success_message in response else 'error', response.get(success_message, fail_message))
+
+        return response
+
+    def __handle_add_product_to_basket(self, message_body_dict, log_sender):
+        _customer_basket_doa = customer_basket_doa.customer_basket_doa(self._postgreSQL_db.get_session())
+        if self.current_customer_basket is None:
+            self.current_customer_basket = _customer_basket_doa.create_basket(self.current_customer)
+
+        product_info = message_body_dict['payload']['product_information']
+        response = _customer_basket_doa.add_product_to_basket(customer_basket=self.current_customer_basket,
+                                                              author=product_info['Author'],
+                                                              title=product_info['Title'],
+                                                              isbn=product_info['ISBN'],
+                                                              price=product_info['Price'],
+                                                              quantity=product_info['Count'],
+                                                              publisher=product_info['Publisher'])
+
+        success_message = 'Adding Item to Basket Done Successfully'
+        fail_message = 'Adding Item to Basket Failed'
+        log_sender('debug' if success_message in response else 'error', response.get(success_message, fail_message))
+
+        return response
+
+    def handle_customer_sign_up(self, message_body_dict, notification_event_payload, log_sender):
+        _customer_dao = customer_dao.customer_dao(self._postgreSQL_db.get_session())
+        response = _customer_dao.add_customer_by_parameters(customer_first_name=message_body_dict['payload'].get('first_name'),
+                                                            customer_last_name=message_body_dict['payload'].get('last_name'),
+                                                            customer_username=message_body_dict['payload'].get('username'),
+                                                            customer_password=message_body_dict['payload'].get('password'),
+                                                            customer_email=message_body_dict['payload'].get('email'),
+                                                            customer_phone_number=message_body_dict['payload'].get('phone'),
+                                                            customer_addresses=message_body_dict['payload'].get('address'))
+
+        notification_event_payload['info'] = response['customer_sign_up']
+        log_sender('debug' if 'Signed Up Successfully' in response['customer_sign_up'] else 'error', response['customer_sign_up'])
+
+        if response['customer_sign_up'] == 'Signed Up Successfully':
+            self.__notification_msg_sender(required_action='email-signup', payload=message_body_dict['payload'])
+
+        return response
+
+    def __handle_get_current_customer(self, message_body_dict, log_sender):
+        if self.current_customer:
+            log_sender('info', 'Current Customer Info')
+            return self.current_customer.to_json()
+        return None
+
+    def __handle_clear_basket(self, message_body_dict, log_sender):
+        _customer_basket_doa = customer_basket_doa.customer_basket_doa(self._postgreSQL_db.get_session())
+        response = _customer_basket_doa.clear_basket(customer_basket_id=self.current_customer_basket.customer_basket_id)
+
+        success_message = 'Clearing basket done successfully'
+        log_sender('debug' if success_message in response else 'error',
+                   response.get(success_message, 'Clearing basket failed'))
+
+        return response
     def message_body_analyzer(self, **kwargs):
         for key, value in kwargs.items():
             if key == 'message_body':
