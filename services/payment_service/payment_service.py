@@ -39,10 +39,8 @@ class payment_handler(rpc_server.rpc_server):
                  logging_exchange_name: str, logging_exchange_type: str):
         super().__init__(rabbitmq_params, queue_name)
 
-        if os.environ['DEBUG_FLAG'] == 'True':
-            self.DEBUG_FLAG = True
-        else:
-            self.DEBUG_FLAG = False
+        self.DEBUG_FLAG = os.environ.get('DEBUG_FLAG', 'False') == 'True'
+        print(self.DEBUG_FLAG)
 
         self.notification_exchange_name = notification_exchange_name
         self.notification_exchange_type = notification_exchange_type
@@ -119,40 +117,38 @@ class payment_handler(rpc_server.rpc_server):
                 print(str(err))
 
     def message_body_analyzer(self, **kwargs):
-        for key, value in kwargs.items():
-            if key == 'message_body':
-                message_body = value
+        message_body = kwargs.get('message_body', None)
 
-        message_body_dict = ast.literal_eval(message_body.decode('utf-8'))
-        notification_event_payload = message_body_dict.get('payload')
-        notification_event_payload['subject'] = message_body_dict.get('required_action')
+        if message_body:
+            # Parse the message body to dictionary
+            message_body_dict = ast.literal_eval(message_body.decode('utf-8'))
+            notification_event_payload = message_body_dict.get('payload', {})
+            required_action = message_body_dict.get('required_action')
+            notification_event_payload['subject'] = required_action
 
-        if message_body_dict.get('required_action') == 'paypal-payment':
-            if self.DEBUG_FLAG:
-                print(message_body_dict)
-                self.__payment_log_sender('info', payload=notification_event_payload,
-                                          message=message_body_dict.get('required_action'),
-                                          info='Payment with Paypal is requested',
-                                          correlation_id=message_body_dict.get('correlation_id'))
-            return json.dumps(process_paypal_payment(None, amount=notification_event_payload['total_price']))
-        elif message_body_dict.get('required_action') == 'visa-payment':
-            if self.DEBUG_FLAG:
-                print(message_body_dict)
-                self.__payment_log_sender('info', payload=notification_event_payload,
-                                          message=message_body_dict.get('required_action'),
-                                          info='Payment with Visa Card is requested',
-                                          correlation_id=message_body_dict.get('correlation_id'))
-            return json.dumps(process_visa_payment(None, amount=notification_event_payload['total_price']))
-        elif message_body_dict.get('required_action') == 'mastercard-payment':
-            if self.DEBUG_FLAG:
-                print(message_body_dict)
-                self.__payment_log_sender('info', payload=notification_event_payload,
-                                          message=message_body_dict.get('required_action'),
-                                          info='Payment with Master Card is requested',
-                                          correlation_id=message_body_dict.get('correlation_id'))
-            return json.dumps(process_mastercard_payment(None, amount=notification_event_payload['total_price']))
-        else:
-            return json.dumps({"status": "failed", "message": "payment failed"})
+            log_payment_info = lambda action: self.__payment_log_sender('info',
+                                                                        payload=notification_event_payload,
+                                                                        message=action,
+                                                                        info=f"Payment with {action.split('-')[0].capitalize()} is requested",
+                                                                        correlation_id=message_body_dict.get('correlation_id')
+                                                                        ) if self.DEBUG_FLAG == 'True' else None
+
+            # Payment processors mapped to required_action
+            payment_processors = {
+                'paypal-payment': lambda: process_paypal_payment(None,
+                                                                 amount=notification_event_payload.get('total_price')),
+                'visa-payment': lambda: process_visa_payment(None,
+                                                             amount=notification_event_payload.get('total_price')),
+                'mastercard-payment': lambda: process_mastercard_payment(None,
+                                                                         amount=notification_event_payload.get('total_price'))
+            }
+
+            # Execute the payment processor if action is valid, otherwise return failure message
+            if required_action in payment_processors:
+                log_payment_info(required_action)
+                return json.dumps(payment_processors[required_action]())
+            else:
+                return json.dumps({"status": "failed", "message": "payment failed"})
 
 
 def payment_handler_main():
