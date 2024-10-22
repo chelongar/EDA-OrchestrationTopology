@@ -1,46 +1,52 @@
 #!/usr/bin/python
 
-import argparse
 import ast
 import configparser
 import json
 import os
-import pika
 
+import pika
 from RPC import rpc_server
-from database import database_interface
 from exchange import sender_exchange
 
+from database import database_interface
 from utilities import event
 
 
 class inventory_service(rpc_server.rpc_server):
     def __init__(self, rabbitmq_params: object, rpc_queue_name: str,
                  notification_exchange_name: str, notification_exchange_type: str,
-                 logging_exchange_name: str, logging_exchange_type: str, json_file_path=None):
+                 logging_exchange_name: str, logging_exchange_type: str, json_file_path: str = None):
         super().__init__(rabbitmq_params, rpc_queue_name)
 
-        if os.environ['DEBUG_FLAG'] == 'True':
-            self.DEBUG_FLAG = True
-        else:
-            self.DEBUG_FLAG = False
+        self.DEBUG_FLAG = os.environ.get('DEBUG_FLAG', 'False') == 'True'
 
         self.json_file_path = json_file_path
-        # TODO
-        #  FIX IT
-        # TODO
-        if (self.json_file_path is not None) and isinstance(self.json_file_path, str) and self.json_file_path != '':
-            self._database_handler = database_interface.database_interface(self.json_file_path)
-            self._database_handler.create_db_table()
-            self._database_handler.load_data_to_database()
-        else:
-            print('Can not open json file')
-            exit(1)
+        self._setup_database()
 
         self.notification_exchange_name = notification_exchange_name
         self.notification_exchange_type = notification_exchange_type
         self.logging_exchange_name = logging_exchange_name
         self.logging_exchange_type = logging_exchange_type
+
+    def _setup_database(self):
+        """Initialize database from the provided JSON file path."""
+        if not self.json_file_path:
+            self._handle_invalid_json_path("JSON file path is missing.")
+
+        if not isinstance(self.json_file_path, str):
+            self._handle_invalid_json_path("Invalid JSON file path type. Expected a string.")
+
+        try:
+            self._database_handler = database_interface.database_interface(self.json_file_path)
+            self._database_handler.create_db_table()
+            self._database_handler.load_data_to_database()
+        except (FileNotFoundError, IOError) as e:
+            self._handle_invalid_json_path(f"Failed to open JSON file: {e}")
+
+    def _handle_invalid_json_path(self, error_message: str):
+        print(f"Error: {error_message}")
+        exit(1)
 
     @property
     def notification_exchange_name(self):
@@ -110,69 +116,45 @@ class inventory_service(rpc_server.rpc_server):
                 print(str(err))
 
     def message_body_analyzer(self, **kwargs):
-        for key, value in kwargs.items():
-            if key == 'message_body':
-                message_body = value
+        # Extract the message_body from kwargs
+        message_body = kwargs.get('message_body', b'').decode('utf-8')
 
-        message_body_dict = ast.literal_eval(message_body.decode('utf-8'))
+        # Parse the message body
+        try:
+            message_body_dict = ast.literal_eval(message_body)
+        except (ValueError, SyntaxError):
+            self.__inventory_log_sender('error',
+                                        payload={'error': 'Invalid message body format'},
+                                        info='parsing_error')
+            return json.dumps({})
 
-        response = json.dumps({})
-
+        # Log the incoming message in debug mode
         if self.DEBUG_FLAG:
             self.__inventory_log_sender('debug', payload=message_body_dict,
-                                        info=message_body_dict.get('required_action'))
+                                        info=message_body_dict.get('required_action', 'unknown'))
 
-        if message_body_dict.get('required_action') == 'get-list-of-items':
-            response = self._database_handler.get_list_of_items()
+        # Map of required actions to corresponding database handler methods
+        action_map = {'get-list-of-items': self._database_handler.get_list_of_items,
+                      'check_item_by_ISBN': lambda: self._database_handler.check_book_by_id(message_body_dict.get('payload', {}).get('ISBN')),
+                      'check_item_by_title': lambda: self._database_handler.check_book_by_title(message_body_dict.get('payload', {}).get('Title')),
+                      'get_item_price_by_ISBN': lambda: self._database_handler.get_book_price_by_id(message_body_dict.get('payload', {}).get('ISBN')),
+                      'get_item_price_by_title': lambda: self._database_handler.get_book_price_by_title(message_body_dict.get('payload', {}).get('Title')),
+                      'order_item_with_ISBN': lambda: self._database_handler.get_book_by_id(message_body_dict.get('payload', {}).get('ISBN')),
+                      'order_item_with_title': lambda: self._database_handler.get_book_by_title(message_body_dict.get('payload', {}).get('Title'))
+                      }
 
+        # Get the required action
+        required_action = message_body_dict.get('required_action')
+
+        # Execute the corresponding action or log an error if action is invalid
+        if required_action in action_map:
+            response = action_map[required_action]()
+            # Log the response in debug mode
             if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
-        elif message_body_dict.get('required_action') == 'check_item_by_ISBN':
-            response = self._database_handler.check_book_by_id(message_body_dict.get('payload').get('ISBN'))
-
-            if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
-        elif message_body_dict.get('required_action') == 'check_item_by_title':
-            response = self._database_handler.check_book_by_title(message_body_dict.get('payload').get('Title'))
-
-            if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
-        elif message_body_dict.get('required_action') == 'get_item_price_by_ISBN':
-            response = self._database_handler.get_book_price_by_id(message_body_dict.get('payload').get('ISBN'))
-
-            if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
-        elif message_body_dict.get('required_action') == 'get_item_price_by_title':
-            response = self._database_handler.get_book_price_by_title(message_body_dict.get('payload').get('Title'))
-
-            if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
-        elif message_body_dict.get('required_action') == 'order_item_with_ISBN':
-            response = self._database_handler.get_book_by_id(message_body_dict.get('payload').get('ISBN'))
-            if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
-        elif message_body_dict.get('required_action') == 'order_item_with_title':
-            response = self._database_handler.get_book_by_title(message_body_dict.get('payload').get('Title'))
-            if self.DEBUG_FLAG:
-                self.__inventory_log_sender('debug', payload=response,
-                                            info=message_body_dict.get('type'))
-
+                self.__inventory_log_sender('debug', payload=response, info=message_body_dict.get('type', 'unknown'))
         else:
-            self.__inventory_log_sender('error', payload=message_body_dict,
-                                        info=message_body_dict.get('type'))
-            exit(1)
+            self.__inventory_log_sender('error', payload=message_body_dict, info='unknown_action')
+            return json.dumps({})
 
         return json.dumps(response)
 
