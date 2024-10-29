@@ -29,9 +29,9 @@ class email_notification_sender:
             pass
 
         template_vars = {
-            'title': 'Welcome To Wonderland Bookstore',
-            'header': payload['subject'],
-            'body_text': payload['info'],
+            'first_name': payload['first_name'],
+            'last_name': payload['last_name'],
+            'title': 'Wonderland Bookstore',
             'styles': email_style
         }
 
