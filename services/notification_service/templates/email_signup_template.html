@@ -2,15 +2,23 @@
 <html>
 <head>
     <title>{title}</title>
-    <style>
-        {styles}
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='email_signup_template.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>{header}</h1>
-        <p> Welcome To Wonderland Bookstore </p>
-        <p>{body_text}</p>
+        <!-- Greeting and Welcome Message -->
+        <h1>Welcome, <span class="highlight">{first_name} {last_name}</span>!</h1>
+        <p>Welcome to <span class="highlight">{title}</span>!</p>
+
+        <!-- Body Text -->
+        <p>Dear {first_name},</p>
+        <p>Thank you for signing up with us. We're thrilled to have you on board and can’t wait to share our world of books with you!</p>
+
+        <!-- Closing Remark -->
+        <p>If you have any questions, feel free to reach out to our support team.</p>
+
+        <!-- Footer Message -->
+        <p class="footer">Happy Reading!<br>{title} Team</p>
     </div>
 </body>
 </html>
