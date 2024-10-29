@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{title}</title>
+    <title>Your Invoice</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='invoice_email_template.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Thank you for your purchase, <span class="highlight">{first_name} {last_name}</span>!</h1>
+        <p>We appreciate your business at <span class="highlight">{title}</span>.</p>
+
+        <!-- Invoice Summary -->
+        <p>Here is a summary of your recent purchase:</p>
+        <table class="invoice-summary">
+            <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Price Per Item</th>
+            </tr>
+            {invoice_items}
+        </table>
+
+        <p class="total-amount">Total Amount Due: <strong>{total_amount} Euro</strong></p>
+
+        <!-- Closing Remark -->
+        <p>If you have any questions regarding this invoice, please contact our support team.</p>
+
+        <p class="footer">Thank you,<br> {title} Team</p>
+    </div>
+</body>
+</html>
