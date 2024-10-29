@@ -23,7 +23,7 @@ class email_notification_sender:
             with open('templates/email_signup_template.html', 'r') as file:
                 html_content = file.read()
 
-            with open('templates/email_signup_style.css', 'r') as file:
+            with open('static/email_signup_style.css', 'r') as file:
                 email_style = file.read()
         else:
             pass
