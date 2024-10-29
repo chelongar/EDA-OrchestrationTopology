@@ -4,6 +4,7 @@ import configparser
 import json
 import smtplib
 import os
+from collections import defaultdict
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from invoice_generator_pdf import invoice_generator_pdf
@@ -18,22 +19,46 @@ class email_notification_sender:
         self.email_sender_password = email_sender_password
 
     def __call__(self, payload, required_action, invoice_path=''):
+        template_vars = {
+            'first_name': payload['first_name'],
+            'last_name': payload['last_name'],
+            'title': 'Wonderland Bookstore'
+        }
+
         # Read the HTML file
-        if required_action == 'email-signup' or required_action == 'email-invoice':
+        if required_action == 'email-signup':
             with open('templates/email_signup_template.html', 'r') as file:
                 html_content = file.read()
 
             with open('static/email_signup_style.css', 'r') as file:
                 email_style = file.read()
+
+            template_vars['styles'] = email_style
+
+        elif required_action == 'email-invoice':
+            with open('templates/invoice_email_template.html', 'r') as file:
+                html_content = file.read()
+
+            with open('static/invoice_email_style.css', 'r') as file:
+                email_style = file.read()
+
+            unique_items = defaultdict(lambda: {'Item': '', 'Quantity': 0, 'Price': 0})
+            for item in payload['purchased_items']:
+                key = (item['Title'], item['Price'])
+                unique_items[key]['Item'] = item['Title']
+                unique_items[key]['Quantity'] += 1
+                unique_items[key]['Price'] = item['Price']
+
+            invoice_items = ''.join(
+                f"<tr><td>{data['Item']}</td><td>{data['Quantity']}</td><td>${data['Price']}</td></tr>"
+                for data in unique_items.values()
+            )
+
+            template_vars['styles'] = email_style
+            template_vars['invoice_items'] = invoice_items
+            template_vars['total_amount'] = payload['total_price']
         else:
             pass
-
-        template_vars = {
-            'first_name': payload['first_name'],
-            'last_name': payload['last_name'],
-            'title': 'Wonderland Bookstore',
-            'styles': email_style
-        }
 
         # Replace placeholders with actual values
         html_content = html_content.format(**template_vars)
