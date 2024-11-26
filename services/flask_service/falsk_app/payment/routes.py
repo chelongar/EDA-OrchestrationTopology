@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from collections import defaultdict
 
 from current_customer import get_customer_from_customer_service
 from flask import Blueprint, current_app
@@ -87,8 +88,7 @@ def payment():
         for method, subject in payment_methods.items():
             if request.form.get(method):
                 notification_payload.update({'subject': subject,
-                                             'info': f'Payment with {method.capitalize()} is requested'
-                                             })
+                                             'info': f'Payment with {method.capitalize()} is requested'})
                 return payment_steps_manager(notification_payload=notification_payload,
                                              payment_payload=payment_payload,
                                              book_isbns=book_isbns)
@@ -97,5 +97,10 @@ def payment():
             return redirect(url_for("main.welcome_page"))
 
     elif request.method == "GET":
-        return render_template('payment.html', data=basket_data, total_price=total_price)
+        count_dict = defaultdict(int)
+        for item in basket_data:
+            count_dict[tuple(sorted(item.items()))] += 1
+
+        _basket_data = [{**dict(item), 'Orders Count': count} for item, count in count_dict.items()]
+        return render_template('payment.html', data=_basket_data, total_price=total_price)
 
