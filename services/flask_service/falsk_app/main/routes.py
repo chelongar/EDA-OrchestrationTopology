@@ -38,7 +38,7 @@ def handle_post_request():
     json_object = request.form.get('json_object')
     if json_object:
         if process_add_to_basket(json_object):
-            return redirect(url_for("basket.customer_basket"))
+            return redirect(url_for('main.get_list_of_books_in_details'))
         else:
             # TODO: Handle failure case when adding to basket fails
             pass
