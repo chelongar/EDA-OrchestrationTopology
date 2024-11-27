@@ -2,7 +2,6 @@
 import ast
 import datetime
 
-from current_customer import get_customer_from_customer_service
 from flask import Blueprint, current_app
 from flask import render_template, request, redirect, url_for
 from flask_login import login_required
