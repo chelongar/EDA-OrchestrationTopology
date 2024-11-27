@@ -116,7 +116,7 @@ class customer_dao:
 
             return {'customer_sign_up': 'Signed Up Successfully'}
         except Exception as error:
-            msg = 'Signed Up Failed' + error
+            msg = 'Signed Up Failed' + str(error)
             return {'customer_sign_up': msg}
 
     def delete_customer_by_email(self, email):
