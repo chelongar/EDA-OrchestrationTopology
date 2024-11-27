@@ -2,7 +2,7 @@
 import datetime
 
 from flask import Blueprint, current_app
-from flask import jsonify, render_template, request
+from flask import jsonify, render_template, request, redirect, url_for
 from utils.helpers import send_message_to_service
 
 from utils.helpers import logout_required
@@ -65,9 +65,20 @@ def handle_response(response):
         if response['payload'].get('customer_sign_up') == 'Signed Up Successfully':
             return render_template('customer_signin_after_signup_page.html', year=datetime.datetime.now().year)
         else:
-            # TODO: Add a proper template or response for this case
-            return jsonify({'error': 'Unexpected response during sign-up'}), 500
+            return redirect(url_for("signup.customer_sign_up_user_exists"))
+
     elif response['message'] == 'failed':
         return jsonify(response['payload']), 400
     else:
         return jsonify({'error': 'Unexpected response format'}), 500
+
+
+@signup_blueprint.route('/customer_sign_up_user_exists', methods=['POST', 'GET'])
+@logout_required
+def customer_sign_up_user_exists():
+    if request.method == "POST":
+        if request.form.get('return_home'):
+            return redirect(url_for("main.welcome_page"))
+    else:
+        return render_template('customer_signup_user_exists_failure.html', message='User Exists!',
+                               year=datetime.datetime.now().year)

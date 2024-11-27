@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title> User Exists </title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styling_signup_user_exists_failure.css') }}">
+        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='bookstore_icon.png') }}">
+    </head>
+    <body>
+        <center>
+            <header>
+                <h1>Wonderland Bookstore</h1>
+            </header>
+            <td>
+                <img class="one" src={{url_for('static', filename='sorry.png')}} alt="image">
+            </td>
+            <br>
+            <div class="content">
+                {% block content %}
+                <br> <br>
+                <h1 style="color: #FF007F; font-style: italic;">{{ message }}</h1>
+            </div>
+            <div>
+                <br> <br>
+                <form method="POST">
+                    <style>
+                      .home-icon {font-size: 2em;}
+                    </style>
+                    <button type="submit" name="return_home" value="Home" class="home-icon">&#127968;</button>
+                </form>
+                {% endblock %}
+            </div>
+        </center>
+    </body>
+    <footer>
+        <p> @Copyright {{ year}}. Wonderland Bookstore Application </p>
+    </footer>
+</html>
