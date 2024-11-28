@@ -1,14 +1,6 @@
-@import url('styling_page_common.css');
-
 img {
-  width: 20%;
+    width: 20%;
 }
-
-.message {
-    opacity: 0; /* Initially hidden */
-    animation: fadeIn 2s forwards; /* Animation to fade in */
-}
-
 .container {
     max-width: 400px;
     margin: 0 auto;
@@ -16,24 +8,17 @@ img {
     background-color: #fff;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    opacity: 0; /* Initially hidden */
-    animation: fadeIn 2s forwards; /* Animation to fade in */
-    animation-delay: 2s; /* Delay for content animation */
 }
-
 h1 {
     text-align: center;
 }
-
 form {
     margin-top: 20px;
 }
-
 label {
     display: block;
     margin-bottom: 5px;
 }
-
 input[type="text"],
 input[type="password"] {
     width: 100%;
@@ -43,7 +28,6 @@ input[type="password"] {
     border-radius: 5px;
     box-sizing: border-box;
 }
-
 button {
     width: 100%;
     padding: 10px;
@@ -53,43 +37,31 @@ button {
     border-radius: 5px;
     cursor: pointer;
 }
-
 button:hover {
     background-color: #0056b3;
 }
-
 .alert {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 5px;
 }
-
 .alert-success {
     background-color: #d4edda;
     border-color: #c3e6cb;
     color: #155724;
 }
-
 .alert-error {
     background-color: #f8d7da;
     border-color: #f5c6cb;
     color: #721c24;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0; /* Start with opacity 0 */
-    }
-    to {
-        opacity: 1; /* Fade in to opacity 1 */
-    }
-}
-
 .welcome-image-container {
-    text-align: center;
+    text-align: center; /* Center the image horizontally */
+    margin: 50px 0; /* Add vertical spacing above and below the image */
 }
 
 .welcome-image {
-    max-width: 100%; /* Optional: to ensure the image is responsive */
-    height: auto; /* Optional: to maintain aspect ratio */
+    max-width: 100%; /* Ensure the image is responsive */
+    height: auto;    /* Maintain aspect ratio */
 }

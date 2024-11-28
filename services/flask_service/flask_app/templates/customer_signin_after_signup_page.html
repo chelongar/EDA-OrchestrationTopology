@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <title> Wonderland Bookstore </title>
-        <link rel="stylesheet" href="static/styling_sheet_signin_after_failure.css">
+        <link rel="stylesheet" href="static/styling_sheet_signin_after_signup_page.css">
         <link rel="icon" type="image/x-icon" href="static/bookstore_icon.png">
     </head>
     <body>
@@ -13,7 +13,7 @@
             </header>
             <br> <br>
             <div class="message">
-                <h1>Signin Failed - Username and/or Password Is Not Valid</h1>
+                <h1>Sign Up Was Successful</h1>
             </div>
             <div class="container">
                 <h1>Sign In</h1>
@@ -37,11 +37,10 @@
                 </form>
                 <p>Don't have an account? <a href="{{ url_for('signup.customer_sign_up') }}">Sign up here</a>.</p>
             </div>
-            <br> <br> <br> <br> <br>
-            <div class="welcome-image-container">
-                <img src="{{ url_for('static', filename='welcome_page_image.png') }}" alt="Welcome to Wonderland Bookstore" class="welcome-image">
+            <div class="welcome-image-container"><img src="{{ url_for('static', filename='welcome_page_image.png') }}"
+                                              alt="Welcome to Wonderland Bookstore"
+                                              class="welcome-image">
             </div>
-            <br><br> <br><br> <br><br> <br><br>
         </center>
     </body>
     <footer>

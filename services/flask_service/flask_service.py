@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import os
 
-from falsk_app import create_app
+from flask_app import create_app
 
 mediator_application = create_app(os.path.join(os.path.dirname(__file__), 'config', 'config_file.ini'),
                                   os.environ['RABBITMQ_CONF'])

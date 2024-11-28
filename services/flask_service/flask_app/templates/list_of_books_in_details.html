@@ -51,7 +51,6 @@
                     <style> .basket-icon {font-size: 2em;} </style>
                     <button type="submit" name="basket_items" value="Basket Items" class="basket-icon">&#128722;</button>
                 </form>
-                <br> <br>
                 <form method="POST">
                     <h2> HOME </h2>
                     <style> .home-icon {font-size: 2em;} </style>
@@ -59,12 +58,10 @@
                 </form>
             </section>
         </div>
+        <div class="welcome-image-container">
+            <img src="{{ url_for('static', filename='welcome_page_image.png') }}"
+                 alt="Welcome to Wonderland Bookstore"
+                 class="welcome-image">
+        </div>
     {% endblock %}
 </main>
-    <br> <br> <br>
-{% block footer %}
-    <div class="welcome-image-container">
-        <img src="{{ url_for('static', filename='welcome_page_image.png') }}" alt="Welcome to Wonderland Bookstore" class="welcome-image">
-    </div>
-    <br><br> <br><br> <br><br> <br><br>
-{% endblock %}
