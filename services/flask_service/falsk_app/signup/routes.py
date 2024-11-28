@@ -3,7 +3,7 @@ import datetime
 
 from flask import Blueprint, current_app
 from flask import jsonify, render_template, request, redirect, url_for
-from utils.helpers import send_message_to_service
+from utils.helpers import send_message_to_service, logging_message_sender
 
 from utils.helpers import logout_required
 from utilities import event
@@ -31,6 +31,9 @@ def customer_sign_up():
         # Send event notification and handle response
         event_notification = event.notification_event(required_action='customer-sign-up', payload=payload)
         response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+        logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                               current_app.config['LOGGING_EXCHANGE_NAME'], customer_sign_up_response=response)
 
         # Handle the response from the customer service
         return handle_response(response)
