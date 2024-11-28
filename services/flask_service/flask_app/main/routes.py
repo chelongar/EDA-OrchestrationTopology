@@ -7,7 +7,7 @@ from flask import Blueprint, current_app
 from flask import render_template, request, redirect, url_for
 from flask_login import login_required
 
-from utils.helpers import send_message_to_service
+from utils.helpers import send_message_to_service, logging_message_sender
 from utilities import event
 from current_customer import get_customer_from_customer_service
 
@@ -73,6 +73,11 @@ def handle_get_request():
                                                   payload={'info': 'List of All Items in Database'})
 
     response = send_message_to_service(event_notification('json'), current_app.config['INVENTORY_QUEUE'])
+
+    logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                           current_app.config['LOGGING_EXCHANGE_NAME'],
+                           get_list_of_items_response=response.get('message'))
+
     if response.get('message') == 'succeed':
         return render_template('list_of_books_in_details.html', data=response.get('payload'))
     if response.get('payload') == 'failed':
@@ -103,6 +108,10 @@ def process_add_to_basket(json_object):
                                                       payload={'product_information': product_info})
 
         response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+        logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                               current_app.config['LOGGING_EXCHANGE_NAME'], add_product_to_basket_response=response)
+
         if response.get('message') == 'succeed':
             return validation_results.ADDING_SUCCEED
         else:

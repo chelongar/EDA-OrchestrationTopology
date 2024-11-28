@@ -93,6 +93,10 @@ def check_item_availability(item):
     event_notification = event.notification_event(required_action='check_item_by_ISBN',
                                                   payload={'ISBN': item.get('ISBN')})
     response = send_message_to_service(event_notification('json'), current_app.config['INVENTORY_QUEUE'])
+
+    logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                           current_app.config['LOGGING_EXCHANGE_NAME'], check_item_by_ISBN_response=response['message'])
+
     return json.loads(response['payload'])
 
 
@@ -140,6 +144,11 @@ def handle_item_removal(item_information):
                                                   payload={'product_information': ast.literal_eval(item_information)})
 
     response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+    logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                           current_app.config['LOGGING_EXCHANGE_NAME'],
+                           remove_item_from_basket_response=response['message'])
+
     if response['message'] == 'succeed':
         return handle_successful_removal()
     elif response['message'] == 'failed':
@@ -171,6 +180,10 @@ def decrement_item_from_basket(item_information):
     event_notification = event.notification_event(required_action='decrement-item-from-basket',
                                                   payload={'product_information': product_info})
     response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+    logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                           current_app.config['LOGGING_EXCHANGE_NAME'],
+                           decrement_item_from_basket_response=response['message'])
 
     if response.get('message') == 'succeed':
         # Retrieve the customer's basket data

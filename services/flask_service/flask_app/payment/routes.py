@@ -26,12 +26,21 @@ def payment_steps_manager(notification_payload, payment_payload, book_isbns):
 
         _event_notification = event.notification_event(required_action='clear-basket', payload={})
         response = send_message_to_service(_event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
+
+        logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                               current_app.config['LOGGING_EXCHANGE_NAME'], clear_basket_response=response)
+
         if response['message'] == 'succeed':
             for isbn in book_isbns:
                 inventory_event_notification = event.notification_event(required_action='order_item_with_ISBN',
                                                                         payload={'ISBN': isbn})
                 inventory_response = send_message_to_service(inventory_event_notification('json'),
                                                              current_app.config['INVENTORY_QUEUE'])
+
+                logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
+                                       current_app.config['LOGGING_EXCHANGE_NAME'],
+                                       inventory_response=inventory_response)
+
                 if inventory_response['message'] == 'succeed':
                     pass
                 else:

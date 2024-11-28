@@ -38,10 +38,6 @@ def logging_message_sender(log_severity, exchange_type, exchange_name, **kwargs)
         try:
             log_msg_sender(log_severity, log_message('json'))
         except Exception as err:
-            _error_wrapper = error_wrapper.error_wrapper(err)
-            # TODO
-            # Write a MTML template
-            # TODO
             print(str(err))
 
 
