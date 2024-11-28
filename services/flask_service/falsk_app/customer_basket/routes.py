@@ -1,6 +1,5 @@
 import ast
 import json
-import os
 from collections import defaultdict
 
 from current_customer import get_customer_from_customer_service
