@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import ast
 import datetime
+from enum import Enum
 
 from flask import Blueprint, current_app
 from flask import render_template, request, redirect, url_for
@@ -10,6 +11,13 @@ from utils.helpers import send_message_to_service
 from utilities import event
 
 main_blueprint = Blueprint('main', __name__)
+
+
+class validation_results(Enum):
+    ADDING_SUCCEED = "adding_succeed"
+    ADDING_FAILED = "adding_failed"
+    INVALID_INPUT = "invalid_input"
+    ADDING_PREVENTED = "adding_prevented"
 
 
 @main_blueprint.route('/home', methods=['POST', 'GET'])
