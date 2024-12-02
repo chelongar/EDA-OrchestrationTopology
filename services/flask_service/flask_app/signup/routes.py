@@ -67,7 +67,7 @@ def handle_response(response):
     if response['message'] == 'succeed':
         if response['payload'].get('customer_sign_up') == 'Signed Up Successfully':
             return render_template('customer_signin_after_signup_page.html', year=datetime.datetime.now().year)
-        else:
+        elif response['payload'].get('customer_sign_up') == 'User Exists':
             return redirect(url_for("signup.customer_sign_up_user_exists"))
 
     elif response['message'] == 'failed':
