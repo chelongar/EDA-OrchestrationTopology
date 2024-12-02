@@ -126,10 +126,8 @@ class customer_service(rpc_server.rpc_server):
 
     def __handle_customer_sign_in(self, message_body_dict, log_sender):
         _customer_authentication = customer_authentication.customer_authentication(self._postgreSQL_db.get_session())
-        response = _customer_authentication.customer_login(
-            customer_username=message_body_dict['payload'].get('username'),
-            customer_password=message_body_dict['payload'].get('password')
-        )
+        response = _customer_authentication.customer_login(customer_username=message_body_dict['payload'].get('username'),
+                                                           customer_password=message_body_dict['payload'].get('password'))
 
         if response['customer_sign_in'] == 'Login Was Successful':
             _customer_dao = customer_dao.customer_dao(self._postgreSQL_db.get_session())
@@ -178,8 +176,13 @@ class customer_service(rpc_server.rpc_server):
 
         return response
 
-    def handle_customer_sign_up(self, message_body_dict, notification_event_payload, log_sender):
+    def __handle_customer_sign_up(self, message_body_dict, notification_event_payload, log_sender):
         _customer_dao = customer_dao.customer_dao(self._postgreSQL_db.get_session())
+
+        if _customer_dao.check_user_existence(message_body_dict['payload'].get('username')):
+            log_sender('debug', 'User Exists')
+            return {'customer_sign_up': 'User Exists'}
+
         response = _customer_dao.add_customer_by_parameters(customer_first_name=message_body_dict['payload'].get('first_name'),
                                                             customer_last_name=message_body_dict['payload'].get('last_name'),
                                                             customer_username=message_body_dict['payload'].get('username'),
@@ -222,11 +225,9 @@ class customer_service(rpc_server.rpc_server):
         # Debug log function
         log_sender = lambda severity, info=None: (self.__customer_service_log_sender(log_severity=severity,
                                                                                      payload=response,
-                                                                                     message=message_body_dict.get(
-                                                                                         'type'),
+                                                                                     message=message_body_dict.get('type'),
                                                                                      info=info,
-                                                                                     correlation_id=message_body_dict.get(
-                                                                                         'correlation_id')))
+                                                                                     correlation_id=message_body_dict.get('correlation_id')))
 
         if self.DEBUG_FLAG:
             self.__customer_service_log_sender(log_severity='debug', payload=message_body_dict,
@@ -242,8 +243,8 @@ class customer_service(rpc_server.rpc_server):
                    'decrement-item-from-basket': lambda: self.__handle_basket_action('decrement',
                                                                                      message_body_dict, log_sender),
                    'add-product-to-basket': lambda: self.__handle_add_product_to_basket(message_body_dict, log_sender),
-                   'customer-sign-up': lambda: self.handle_customer_sign_up(message_body_dict,
-                                                                            notification_event_payload, log_sender),
+                   'customer-sign-up': lambda: self.__handle_customer_sign_up(message_body_dict,
+                                                                              notification_event_payload, log_sender),
                    'get-current-customer': lambda: self.__handle_get_current_customer(message_body_dict, log_sender),
                    'clear-basket': lambda: self.__handle_clear_basket(message_body_dict, log_sender)}
 
