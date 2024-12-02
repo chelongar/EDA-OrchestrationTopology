@@ -59,6 +59,9 @@ class customer_dao:
 
             return {'load_customers_information': err}
 
+    def check_user_existence(self, customer_username):
+        return self.session.query(customer).filter(customer.customer_username == customer_username).first() is not None
+
     def get_all_customers(self):
         return self.session.query(customer).all()
 
