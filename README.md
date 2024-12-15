@@ -1,7 +1,7 @@
 ![Static Badge](https://img.shields.io/badge/version-v1.3.0-brightgreen?style=flat) ![Static Badge](https://img.shields.io/badge/Python-v3.8-blue)
 # Orchestrated Event-Driven Architecture (Mediator)
 
-### Introduction to the Wonderland Book Store System
+### Introduction to the Wonderland Bookstore System
 
 The Wonderland Book Store system is a simplified example of an **Orchestrated Event-Driven Architecture** designed for e-commerce.
 It demonstrates how a user can order books online using a lightweight setup. The system incorporates minimal services to make the architecture easy to understand while showcasing the essential features of such a design. By utilizing modern tools and technologies, the system ensures smooth communication between services and seamless operation.
