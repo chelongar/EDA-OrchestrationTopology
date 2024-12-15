@@ -1,5 +1,5 @@
 ![Static Badge](https://img.shields.io/badge/version-v1.3.0-brightgreen?style=flat) ![Static Badge](https://img.shields.io/badge/Python-v3.8-blue)
-# EDA-OrchestrationTopology
+# Orchestrated Event-Driven Architecture (Mediator)
 
 ### Introduction to the Wonderland Book Store System
 
