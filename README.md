@@ -1,4 +1,4 @@
-![Static Badge](https://img.shields.io/badge/version-v1.3.0-brightgreen?style=flat) ![Static Badge](https://img.shields.io/badge/Python-v3.8-blue)
+![Static Badge](https://img.shields.io/badge/Version-v1.3.0-brightgreen?style=flat) ![Static Badge](https://img.shields.io/badge/Python-v3.8-blue) ![Static Badge](https://img.shields.io/badge/Dockercompose-v3.5-blue)
 # Orchestrated Event-Driven Architecture (Mediator)
 
 ### Introduction to the Wonderland Bookstore System
