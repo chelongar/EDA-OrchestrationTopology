@@ -4,7 +4,11 @@
 ### Introduction to the Wonderland Bookstore OEDA
 
 The Wonderland Book Store system is a simplified example of an **Orchestrated Event-Driven Architecture** designed for e-commerce.
-It demonstrates how a user can order books online using a lightweight setup. The system incorporates minimal services to make the architecture easy to understand while showcasing the essential features of such a design. By utilizing modern tools and technologies, the system ensures smooth communication between services and seamless operation.
+It demonstrates how a user can order books online using a lightweight setup. The system incorporates minimal services to make the architecture easy to understand while showcasing the essential features of such a design.
+
+![Alt text](images/wonderland_welcome.png?raw=true "Wonderland welcome Page")
+
+By utilizing modern tools and technologies, the system ensures smooth communication between services and seamless operation.
 
 ### Technology Stack
 The technology stack includes **RabbitMQ**, which serves as a message broker, enabling reliable and efficient communication between services. **Python Flask** acts as both a mediator and orchestrator, handling service coordination and providing a foundation for the backend logic. The programming language of choice is **Python**, known for its simplicity and readability.
