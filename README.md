@@ -12,7 +12,7 @@ The technology stack includes **RabbitMQ**, which serves as a message broker, en
 To ensure consistency in deployment and scalability, the system is containerized using **Docker** and managed with **Docker Compose**.
 Data storage is handled by **SQLite**, a lightweight database ideal for small-scale applications, making it suitable for this demonstration for inventory service and **PostgreSQL** and **SQL Alchemy** for customer service.
 
-### Services
+### Components & Services
 The OEDA Wonderland Bookstore is composed of several key components. It consists of two databases, four services, an API to orchestrate the purchase workflow and a broker. In this section, we provide a brief overview of their roles and responsibilities.
 
 The most important component is Orchestrator or Mediator, which acts as an API. Built using Python Flask, it handles customer purchase requests step by step.
