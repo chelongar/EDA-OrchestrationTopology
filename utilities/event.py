@@ -41,26 +41,3 @@ class log_event(event):
         :type log_severity: str
         """
         self.log_severity = log_severity
-
-
-class notification__service_message(event):
-    def __init__(self, email_necessity: bool):
-        """
-
-        :type email_necessity: bool
-        """
-        super().__init__()
-        self.email_necessity = email_necessity
-
-
-class domain_event(event):
-    def __init__(self, correlation_id: str, payload: dict):
-        """
-
-        :param correlation_id:  Domain Event Correlation ID
-        :param payload:         Domain Event Payload
-        """
-        super().__init__()
-        self.correlation_id = correlation_id
-        self.payload = payload
-        self.event_type = 'domain_event'
