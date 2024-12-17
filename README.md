@@ -39,6 +39,12 @@ Payments are processed securely using the **Payment Service**, which validates t
 As the Wonderland Application is fully containerized with Docker and orchestrated with Dockercompose, you can simply follow the instruction below:
 1. In the project diectory with dockercopose file is, build application.
 
-2. Call Flask API with the command below:
+![Alt text](images/dcompose.png?raw=true "Docker Compose Instruction")
 
-3. To see the logs via Dozzle service, call it in the browser.
+2. Call Flask API with the URL localhost and port 5000 asbelow:
+
+![Alt text](images/wondelandpath.png?raw=true "Wonderland URL")
+
+3. To see the logs via Dozzle service, call it in the browser via localhost and port 8080.
+
+![Alt text](images/dozzlepath.png?raw=true "Dozzle URL")
