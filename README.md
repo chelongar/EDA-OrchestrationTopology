@@ -34,3 +34,11 @@ The **Customer Service** manages user information, such as profiles and order hi
 The **Notification Service** alerts users about their order status, such as confirmations and shipping updates and so on.
 
 Payments are processed securely using the **Payment Service**, which validates transactions and ensures orders are completed successfully.
+
+### How To Run Application
+As the Wonderland Application is fully containerized with Docker and orchestrated with Dockercompose, you can simply follow the instruction below:
+1. In the project diectory with dockercopose file is, build application.
+
+2. Call Flask API with the command below:
+
+3. To see the logs via Dozzle service, call it in the browser.
