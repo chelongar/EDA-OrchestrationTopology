@@ -128,7 +128,6 @@ def prepare_basket_data(basket_data):
         count_dict[tuple(sorted(item.items()))] += 1
 
     return [{**dict(item), 'Orders Count': count} for item, count in count_dict.items()]
-     
 
 
 @basket_blueprint.route('/remove_item_from_basket/<item_information>', methods=['POST', 'GET'])

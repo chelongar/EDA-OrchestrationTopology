@@ -81,18 +81,15 @@ def payment():
                             'total_price': total_price,
                             'email': customer_data['email'],
                             'first_name': customer_data['first_name'],
-                            'last_name': customer_data['last_name']
-                            }
+                            'last_name': customer_data['last_name']}
 
     payment_payload = {'basket_data': basket_data,
-                       'total_price': total_price
-                       }
+                       'total_price': total_price}
 
     if request.method == "POST":
         payment_methods = {'paypal': 'paypal-payment',
                            'mastercard': 'mastercard-payment',
-                           'visa': 'visa-payment'
-                           }
+                           'visa': 'visa-payment'}
 
         for method, subject in payment_methods.items():
             if request.form.get(method):
