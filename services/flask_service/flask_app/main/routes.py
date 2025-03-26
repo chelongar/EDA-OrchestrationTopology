@@ -69,8 +69,8 @@ def handle_post_request():
 
 
 def handle_get_request():
-    event_notification = event.notification_event(required_action='get-list-of-items',
-                                                  payload={'info': 'List of All Items in Database'})
+    event_notification = event.NotificationEvent(required_action='get-list-of-items',
+                                                 payload={'info': 'List of All Items in Database'})
 
     response = send_message_to_service(event_notification('json'), current_app.config['INVENTORY_QUEUE'])
 
@@ -104,8 +104,8 @@ def process_add_to_basket(json_object):
         return validation_results.INVALID_INPUT
 
     if product_count_in_basket(product_info.get('ISBN')) < 3:
-        event_notification = event.notification_event(required_action='add-product-to-basket',
-                                                      payload={'product_information': product_info})
+        event_notification = event.NotificationEvent(required_action='add-product-to-basket',
+                                                     payload={'product_information': product_info})
 
         response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
 

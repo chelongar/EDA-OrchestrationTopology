@@ -29,7 +29,7 @@ def customer_sign_up():
         payload = construct_payload(customer_info)
 
         # Send event notification and handle response
-        event_notification = event.notification_event(required_action='customer-sign-up', payload=payload)
+        event_notification = event.NotificationEvent(required_action='customer-sign-up', payload=payload)
         response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
 
         logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],

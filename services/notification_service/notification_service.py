@@ -1,182 +1,137 @@
-#!/usr/bin/env python
-import ast
-import configparser
 import json
+import configparser
 import smtplib
 import os
 from collections import defaultdict
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
-from invoice_generator_pdf import invoice_generator_pdf
-import pika
 from email.mime.text import MIMEText
+from typing import Dict, List
+
+import pika
+from invoice_generator_pdf import invoice_generator_pdf
 from exchange import receiver_exchange
 
 
-class email_notification_sender:
-    def __init__(self, email_sender_addr: str, email_sender_password: str):
-        self.email_sender_addr = email_sender_addr
-        self.email_sender_password = email_sender_password
+class EmailNotificationSender:
+    def __init__(self, sender_email: str, sender_password: str):
+        if not sender_email or not isinstance(sender_email, str):
+            raise ValueError("Sender email must be a non-empty string.")
+        if not sender_password or not isinstance(sender_password, str):
+            raise ValueError("Sender password must be a non-empty string.")
 
-    def __call__(self, payload, required_action, invoice_path=''):
-        template_vars = {
+        self.sender_email = sender_email
+        self.sender_password = sender_password
+
+    def __call__(self, payload: dict, required_action: str, invoice_path: str = '') -> None:
+        message = MIMEMultipart()
+        message['From'] = self.sender_email
+        message['To'] = payload['email']
+        message['Subject'] = payload['subject']
+
+        html_content, styles = self._load_template(required_action)
+        html_with_css = f"<style>{styles}</style>{html_content.format(**self._get_template_vars(payload, required_action))}"
+        message.attach(MIMEText(html_with_css, 'html', 'utf-8'))
+
+        if required_action == 'email-invoice':
+            invoice_generator_pdf(f"{payload['first_name']} {payload['last_name']}",
+                                  payload['email'],
+                                  payload['purchased_items'],
+                                  payload['total_price'],
+                                  invoice_path)
+
+            with open(invoice_path, "rb") as pdf_file:
+                pdf_attachment = MIMEApplication(pdf_file.read(), _subtype="pdf")
+                pdf_attachment.add_header('Content-Disposition', 'attachment', filename=invoice_path)
+                message.attach(pdf_attachment)
+
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(self.sender_email, self.sender_password)
+                server.sendmail(self.sender_email, message['To'], message.as_string())
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+
+        if __debug__:
+            print("Email sent successfully.")
+
+    def _load_template(self, action: str) -> (str, str):
+        try:
+            if action == 'email-signup':
+                html = open('templates/email_signup_template.html').read()
+                css = open('static/email_signup_style.css').read()
+            elif action == 'email-invoice':
+                html = open('templates/invoice_email_template.html').read()
+                css = open('static/invoice_email_style.css').read()
+            else:
+                raise ValueError(f"Unsupported email action: {action}")
+            return html, css
+        except Exception as e:
+            raise RuntimeError(f"Failed to load email template or style: {e}")
+
+    def _get_template_vars(self, payload: dict, action: str) -> dict:
+        base_vars = {
             'first_name': payload['first_name'],
             'last_name': payload['last_name'],
             'title': 'Wonderland Bookstore'
         }
-
-        # Read the HTML file
-        if required_action == 'email-signup':
-            with open('templates/email_signup_template.html', 'r') as file:
-                html_content = file.read()
-
-            with open('static/email_signup_style.css', 'r') as file:
-                email_style = file.read()
-
-            template_vars['styles'] = email_style
-
-        elif required_action == 'email-invoice':
-            with open('templates/invoice_email_template.html', 'r') as file:
-                html_content = file.read()
-
-            with open('static/invoice_email_style.css', 'r') as file:
-                email_style = file.read()
-
+        if action == 'email-invoice':
             unique_items = defaultdict(lambda: {'Item': '', 'Quantity': 0, 'Price': 0})
             for item in payload['purchased_items']:
                 key = (item['Title'], item['Price'])
                 unique_items[key]['Item'] = item['Title']
                 unique_items[key]['Quantity'] += 1
                 unique_items[key]['Price'] = item['Price']
-
             invoice_items = ''.join(
                 f"<tr><td>{data['Item']}</td><td>{data['Quantity']}</td><td>${data['Price']}</td></tr>"
                 for data in unique_items.values()
             )
-
-            template_vars['styles'] = email_style
-            template_vars['invoice_items'] = invoice_items
-            template_vars['total_amount'] = payload['total_price']
-        else:
-            pass
-
-        # Replace placeholders with actual values
-        html_content = html_content.format(**template_vars)
-        _message = MIMEMultipart()
-        _message['From'] = self.email_sender_addr
-        _message['To'] = payload['email']
-        _message['Subject'] = payload['subject']
-
-        # Combine HTML and CSS by embedding CSS within the HTML
-        html_with_css = f"<style>{email_style}</style>{html_content}"
-
-        # Attach the HTML content (with CSS) to the email
-        _message.attach(MIMEText(html_with_css, 'html', 'utf-8'))
-
-        if required_action == 'email-invoice':
-            # Call Invoice Generator
-            invoice_generator_pdf(payload['first_name'] + ' ' + payload['last_name'],
-                                  payload['email'], payload['purchased_items'], payload['total_price'], invoice_path)
-
-            with open(invoice_path, "rb") as pdf_file:
-                pdf_attachment = MIMEApplication(pdf_file.read(), _subtype="pdf")
-                pdf_attachment.add_header('Content-Disposition', 'attachment', filename=invoice_path)
-                _message.attach(pdf_attachment)
-
-        try:
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as SMTP_server:
-                SMTP_server.login(_message['From'], self.email_sender_password)
-                SMTP_server.sendmail(_message['From'], _message['To'], _message.as_string())
-        except Exception as e:
-            print(f"Failed to send email: {e}")
-
-        if __debug__:
-            print("Message Sent Successfully!")
+            base_vars['invoice_items'] = invoice_items
+            base_vars['total_amount'] = payload['total_price']
+        return base_vars
 
 
-class notification_handler(receiver_exchange.receiver_exchange):
-    def __init__(self, rabbitmq_params: object, topic_binding_keys: list,
-                 notification_exchange_name: str, notification_exchange_type: str,
-                 notification_email_addr: str, notification_email_pass: str):
-        super().__init__(rabbitmq_params, topic_binding_keys, notification_exchange_type, notification_exchange_name)
-
-        self.notification_email_addr = notification_email_addr
-        self.notification_email_pass = notification_email_pass
-
-    @property
-    def notification_email_addr(self):
-        return self._notification_email_addr
-
-    @notification_email_addr.setter
-    def notification_email_addr(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Sender e-mail address MUST be a string.")
-        if not value:
-            raise ValueError("Sender e-mail address MUST CAN NOT be empty string.")
-        self._notification_email_addr = value
-
-    @property
-    def notification_email_pass(self):
-        return self._notification_email_pass
-
-    @notification_email_pass.setter
-    def notification_email_pass(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Sender e-mail password MUST be a string.")
-        if not value:
-            raise ValueError("Sender e-mail password MUST CAN NOT be empty string.")
-        self._notification_email_pass = value
+class NotificationHandler(receiver_exchange.receiver_exchange):
+    def __init__(self, rabbitmq_params, binding_keys: List[str], exchange_name: str,
+                 exchange_type: str, email_address: str, email_password: str):
+        super().__init__(rabbitmq_params, binding_keys, exchange_type, exchange_name)
+        self.email_sender = EmailNotificationSender(email_address, email_password)
 
     def message_body_analyzer(self, **kwargs):
-
-        for key, value in kwargs.items():
-            if key == 'message_body':
-                message_body = value
-
-        _message_body = ast.literal_eval(str(json.loads(message_body)))
+        message_body_raw = kwargs.get('message_body', b'').decode('utf-8')
+        try:
+            message_body = json.loads(message_body_raw)
+        except json.JSONDecodeError:
+            print("Invalid message format.")
+            return
 
         if __debug__:
-            print(json.dumps(_message_body, sort_keys=True))
+            print(json.dumps(message_body, indent=2))
 
-        _email_notification_sender = email_notification_sender(self.notification_email_addr,
-                                                               self.notification_email_pass)
-        _email_notification_sender(_message_body['payload'],
-                                   _message_body['required_action'],
-                                   invoice_path="invoice.pdf")
+        self.email_sender(payload=message_body['payload'],
+                          required_action=message_body['required_action'],
+                          invoice_path='invoice.pdf')
 
-        return _message_body.get('message')
+        return message_body.get('message')
 
 
 def notification_handler_main():
     try:
-        rabbitmq_config = configparser.ConfigParser()
-        rabbitmq_config.read(os.environ['RABBITMQ_CONF'])
-    except KeyError:
-        print("--> ERROR: The environment variable is not set.")
-    except FileNotFoundError:
-        print(f" --> ERROR: The file at {os.environ['RABBITMQ_CONF']} was NOT found.")
-    except Exception as err:
-        print(f" --> ERROR: {err}")
+        config = configparser.ConfigParser()
+        config.read(os.environ['RABBITMQ_CONF'])
+        email_address = os.environ['NOTIFICATION_EMAIL_ADDRESS']
+        email_password = os.environ['NOTIFICATION_EMAIL_PASSWORD']
+        rabbitmq_params = pika.URLParameters(os.environ['RABBITMQ_URL'])
 
-    try:
-        NOTIFICATION_EMAIL_ADDRESS = os.environ['NOTIFICATION_EMAIL_ADDRESS']
-    except KeyError:
-        print("Environment variable 'NOTIFICATION_EMAIL_ADDRESS' not found.")
+        _NotificationHandler = NotificationHandler(rabbitmq_params,
+                                                   ['notification.*'],
+                                                   config['RABBITMQ_BROKER']['NOTIFICATION_EXCHANGE_NAME'],
+                                                   config['RABBITMQ_BROKER']['NOTIFICATION_EXCHANGE_TYPE'],
+                                                   email_address, email_password)
+        _NotificationHandler()
 
-    try:
-        NOTIFICATION_EMAIL_PASSWORD = os.environ['NOTIFICATION_EMAIL_PASSWORD']
-    except KeyError:
-        print("Environment variable 'NOTIFICATION_EMAIL_PASSWORD' not found.")
-
-    rabbitmq_params = pika.URLParameters(os.environ['RABBITMQ_URL'])
-
-    _notification_handler = notification_handler(rabbitmq_params,
-                                                 ['notification.*'],
-                                                 rabbitmq_config['RABBITMQ_BROKER']['NOTIFICATION_EXCHANGE_NAME'],
-                                                 rabbitmq_config['RABBITMQ_BROKER']['NOTIFICATION_EXCHANGE_TYPE'],
-                                                 NOTIFICATION_EMAIL_ADDRESS,
-                                                 NOTIFICATION_EMAIL_PASSWORD)
-    _notification_handler()
+    except Exception as e:
+        print(f"Failed to start NotificationHandler: {e}")
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import datetime
 import uuid
 
 
-class event:
+class Event:
     def __init__(self):
         self.source_service = os.environ.get('SERVICE_NAME', 'unknown_service')
         self.date_time = datetime.datetime.now().strftime("%d.%m.%Y, %H:%M:%S")
@@ -26,14 +26,14 @@ class event:
         return event_dict
 
 
-class notification_event(event):
+class NotificationEvent(Event):
     def __init__(self, required_action: str, payload: dict):
         super().__init__()
         self.required_action = required_action
         self.payload = payload
 
 
-class log_event(event):
+class LogEvent(Event):
     def __init__(self, log_severity: str):
         super().__init__()
         """
