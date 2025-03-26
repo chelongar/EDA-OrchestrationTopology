@@ -103,7 +103,7 @@ class payment_handler(rpc_server.rpc_server):
         :param message:     Message to send to Logging Service and Logging Service
         """
 
-        log_message = event.log_event(log_severity)
+        log_message = event.LogEvent(log_severity)
 
         for key, value in kwargs.items():
             setattr(log_message, key, value)

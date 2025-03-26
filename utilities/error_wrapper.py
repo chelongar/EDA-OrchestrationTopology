@@ -6,7 +6,7 @@ class error_wrapper:
     def __init__(self, exception):
         self.exception = exception
         self.error_info = self.__exception_details()
-    
+
     def __exception_details(self):
         return {
             "time": datetime.datetime.now().strftime("%d.%m.%Y, %H:%M:%S"),
@@ -14,6 +14,6 @@ class error_wrapper:
             "message": str(self.exception),
             "traceback": traceback.format_exc()
         }
-    
+
     def to_json(self):
         return self.error_info

@@ -20,8 +20,8 @@ def customer_sign_in():
         username = request.form['username']
         password = request.form['password']
 
-        event_notification = event.notification_event(required_action='customer-sign-in',
-                                                      payload={'username': username,
+        event_notification = event.NotificationEvent(required_action='customer-sign-in',
+                                                     payload={'username': username,
                                                                'password': password})
         if os.environ['DEBUG_FLAG'] == 'True':
             logging_message_sender(log_severity='info', payload=event_notification('json'),

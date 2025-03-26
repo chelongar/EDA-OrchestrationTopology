@@ -89,7 +89,7 @@ class customer_service(rpc_server.rpc_server):
         return _postgreSQL_db
 
     def __notification_msg_sender(self, required_action, payload, **kwargs):
-        notification_message = event.notification_event(required_action=required_action, payload=payload)
+        notification_message = event.NotificationEvent(required_action=required_action, payload=payload)
 
         for key, value in kwargs.items():
             setattr(notification_message, key, value)
@@ -110,7 +110,7 @@ class customer_service(rpc_server.rpc_server):
         :type log_severity: str
         """
 
-        log_message = event.log_event(log_severity)
+        log_message = event.LogEvent(log_severity)
 
         for key, value in kwargs.items():
             setattr(log_message, key, value)
