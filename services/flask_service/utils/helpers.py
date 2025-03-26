@@ -29,7 +29,7 @@ def logging_message_sender(log_severity, exchange_type, exchange_name, **kwargs)
     """
     rabbitmq_parameters = pika.URLParameters(os.environ['RABBITMQ_URL'])
 
-    log_message = event.log_event(log_severity)
+    log_message = event.LogEvent(log_severity)
 
     for key, value in kwargs.items():
         setattr(log_message, key, value)
@@ -68,7 +68,7 @@ def send_message_to_service(notification: dict, queue_name: str) -> dict:
 
 
 def notification_msg_sender(required_action, exchange_type, exchange_name,  payload, **kwargs):
-    notification_message = event.notification_event(required_action=required_action, payload=payload)
+    notification_message = event.NotificationEvent(required_action=required_action, payload=payload)
 
     for key, value in kwargs.items():
         setattr(notification_message, key, value)

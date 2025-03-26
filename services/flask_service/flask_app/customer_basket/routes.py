@@ -90,8 +90,8 @@ def check_item_availability(item):
     """
     Check if an item exists in the inventory.
     """
-    event_notification = event.notification_event(required_action='check_item_by_ISBN',
-                                                  payload={'ISBN': item.get('ISBN')})
+    event_notification = event.NotificationEvent(required_action='check_item_by_ISBN',
+                                                 payload={'ISBN': item.get('ISBN')})
     response = send_message_to_service(event_notification('json'), current_app.config['INVENTORY_QUEUE'])
 
     logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],
@@ -139,8 +139,8 @@ def remove_item_from_basket(item_information):
 
 
 def handle_item_removal(item_information):
-    event_notification = event.notification_event(required_action='remove-item-from-basket',
-                                                  payload={'product_information': ast.literal_eval(item_information)})
+    event_notification = event.NotificationEvent(required_action='remove-item-from-basket',
+                                                 payload={'product_information': ast.literal_eval(item_information)})
 
     response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
 
@@ -176,8 +176,8 @@ def decrement_item_from_basket(item_information):
     except (ValueError, SyntaxError) as e:
         return "Invalid item information format.", 400
 
-    event_notification = event.notification_event(required_action='decrement-item-from-basket',
-                                                  payload={'product_information': product_info})
+    event_notification = event.NotificationEvent(required_action='decrement-item-from-basket',
+                                                 payload={'product_information': product_info})
     response = send_message_to_service(event_notification('json'), current_app.config['CUSTOMER_SERVICE_QUEUE'])
 
     logging_message_sender('debug', current_app.config['LOGGING_EXCHANGE_TYPE'],

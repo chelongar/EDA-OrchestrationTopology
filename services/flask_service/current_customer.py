@@ -5,7 +5,7 @@ from utilities import event
 
 
 def get_customer_from_customer_service():
-    event_notification = event.notification_event(required_action='get-current-customer', payload={})
+    event_notification = event.NotificationEvent(required_action='get-current-customer', payload={})
 
     response = send_message_to_service(event_notification('json'), 'rpc_queue_customer')
     if response['message'] == 'succeed':
